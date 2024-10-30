@@ -5,16 +5,19 @@
 #define MAX_CONSULTAS 10
 #define ARQUIVO_PACIENTES "pacientes.csv"
 #define ARQUIVO_MEDICOS "medicos.csv"
+#define ARQUIVO_CONSULTAS "consultas.csv"
 
 typedef struct {
     char data[11]; // formato: "dd/mm/yyyy"
-    char medico[50];
+    char cpfPaciente[15];
+    char crmMedico[15];
     char diagnostico[100];
 } Consulta;
 
 typedef struct {
     char nome[50];
-    int idade;
+    char dataNascimento[11]; // data de nascimento no formato dd/mm/yyyy
+    char cpf[15]; // identificador único para paciente
     char sintomas[100];
     Consulta historico[MAX_CONSULTAS];
     int numConsultas;
@@ -23,7 +26,8 @@ typedef struct {
 typedef struct {
     char nome[50];
     char especializacao[50];
-    int disponibilidade;
+    char crm[15]; // identificador único para médico
+    int disponibilidade; // 1 para disponível, 0 para indisponível
 } Medico;
 
 void salvarPacientes(Paciente *pacientes, int numPacientes) {
@@ -33,41 +37,9 @@ void salvarPacientes(Paciente *pacientes, int numPacientes) {
         return;
     }
     
-    fprintf(file, "Nome,Idade,Sintomas\n"); // Cabeçalho do CSV
+    fprintf(file, "Nome,DataNascimento,CPF,Sintomas\n");
     for (int i = 0; i < numPacientes; i++) {
-        fprintf(file, "%s,%d,%s\n", pacientes[i].nome, pacientes[i].idade, pacientes[i].sintomas);
-        for (int j = 0; j < pacientes[i].numConsultas; j++) {
-            Consulta consulta = pacientes[i].historico[j];
-            fprintf(file, "%s,%s,%s\n", consulta.data, consulta.medico, consulta.diagnostico);
-        }
-    }
-    fclose(file);
-}
-
-void carregarPacientes(Paciente *pacientes, int *numPacientes) {
-    FILE *file = fopen(ARQUIVO_PACIENTES, "r");
-    if (!file) {
-        printf("Arquivo de pacientes não encontrado.\n");
-        *numPacientes = 0;
-        return;
-    }
-
-    char linha[256];
-    fgets(linha, sizeof(linha), file); // Ignorar cabeçalho
-    *numPacientes = 0;
-
-    while (fgets(linha, sizeof(linha), file)) {
-        Paciente paciente;
-        sscanf(linha, "%49[^,],%d,%99[^\n]", paciente.nome, &paciente.idade, paciente.sintomas);
-        paciente.numConsultas = 0;
-
-        // Ler histórico de consultas
-        while (fgets(linha, sizeof(linha), file) && linha[0] != '\n') {
-            Consulta consulta;
-            sscanf(linha, "%10[^,],%49[^,],%99[^\n]", consulta.data, consulta.medico, consulta.diagnostico);
-            paciente.historico[paciente.numConsultas++] = consulta;
-        }
-        pacientes[(*numPacientes)++] = paciente;
+        fprintf(file, "%s,%s,%s,%s\n", pacientes[i].nome, pacientes[i].dataNascimento, pacientes[i].cpf, pacientes[i].sintomas);
     }
     fclose(file);
 }
@@ -79,29 +51,23 @@ void salvarMedicos(Medico *medicos, int numMedicos) {
         return;
     }
     
-    fprintf(file, "Nome,Especializacao,Disponibilidade\n"); // Cabeçalho do CSV
+    fprintf(file, "Nome,Especializacao,CRM,Disponibilidade\n");
     for (int i = 0; i < numMedicos; i++) {
-        fprintf(file, "%s,%s,%d\n", medicos[i].nome, medicos[i].especializacao, medicos[i].disponibilidade);
+        fprintf(file, "%s,%s,%s,%d\n", medicos[i].nome, medicos[i].especializacao, medicos[i].crm, medicos[i].disponibilidade);
     }
     fclose(file);
 }
 
-void carregarMedicos(Medico *medicos, int *numMedicos) {
-    FILE *file = fopen(ARQUIVO_MEDICOS, "r");
+void salvarConsultas(Consulta *consultas, int numConsultas) {
+    FILE *file = fopen(ARQUIVO_CONSULTAS, "w");
     if (!file) {
-        printf("Arquivo de médicos não encontrado.\n");
-        *numMedicos = 0;
+        printf("Erro ao abrir arquivo de consultas!\n");
         return;
     }
-
-    char linha[256];
-    fgets(linha, sizeof(linha), file); // Ignorar cabeçalho
-    *numMedicos = 0;
-
-    while (fgets(linha, sizeof(linha), file)) {
-        Medico medico;
-        sscanf(linha, "%49[^,],%49[^,],%d\n", medico.nome, medico.especializacao, &medico.disponibilidade);
-        medicos[(*numMedicos)++] = medico;
+    
+    fprintf(file, "Data,CPFPaciente,CRM,Diagnostico\n");
+    for (int i = 0; i < numConsultas; i++) {
+        fprintf(file, "%s,%s,%s,%s\n", consultas[i].data, consultas[i].cpfPaciente, consultas[i].crmMedico, consultas[i].diagnostico);
     }
     fclose(file);
 }
@@ -109,22 +75,13 @@ void carregarMedicos(Medico *medicos, int *numMedicos) {
 void cadastrarPaciente(Paciente *paciente) {
     printf("Digite o nome do paciente: ");
     scanf(" %49[^\n]", paciente->nome);
-    printf("Digite a idade do paciente: ");
-    scanf("%d", &paciente->idade);
+    printf("Digite a data de nascimento (dd/mm/yyyy): ");
+    scanf(" %10[^\n]", paciente->dataNascimento);
+    printf("Digite o CPF do paciente: ");
+    scanf(" %14[^\n]", paciente->cpf);
     printf("Digite os sintomas: ");
     scanf(" %[^\n]", paciente->sintomas);
     paciente->numConsultas = 0;
-}
-
-void adicionarConsulta(Paciente *paciente, const char *medico, const char *diagnostico, const char *data) {
-    if (paciente->numConsultas < MAX_CONSULTAS) {
-        Consulta *novaConsulta = &paciente->historico[paciente->numConsultas++];
-        strncpy(novaConsulta->medico, medico, sizeof(novaConsulta->medico) - 1);
-        strncpy(novaConsulta->diagnostico, diagnostico, sizeof(novaConsulta->diagnostico) - 1);
-        strncpy(novaConsulta->data, data, sizeof(novaConsulta->data) - 1);
-    } else {
-        printf("Histórico cheio para o paciente %s.\n", paciente->nome);
-    }
 }
 
 void cadastrarMedico(Medico *medico) {
@@ -132,29 +89,77 @@ void cadastrarMedico(Medico *medico) {
     scanf(" %49[^\n]", medico->nome);
     printf("Digite a especialização do médico: ");
     scanf(" %49[^\n]", medico->especializacao);
+    printf("Digite o CRM do médico: ");
+    scanf(" %14[^\n]", medico->crm);
     printf("Disponibilidade (1 para disponível, 0 para indisponível): ");
     scanf("%d", &medico->disponibilidade);
 }
 
-void buscarPaciente(Paciente *pacientes, int numPacientes, const char *nome) {
-    for (int i = 0; i < numPacientes; i++) {
-        if (strcmp(pacientes[i].nome, nome) == 0) {
-            printf("Paciente: %s\nIdade: %d\nSintomas: %s\n", pacientes[i].nome, pacientes[i].idade, pacientes[i].sintomas);
-            printf("Histórico de consultas:\n");
-            for (int j = 0; j < pacientes[i].numConsultas; j++) {
-                Consulta consulta = pacientes[i].historico[j];
-                printf("Data: %s, Médico: %s, Diagnóstico: %s\n", consulta.data, consulta.medico, consulta.diagnostico);
-            }
-            return;
-        }
+void registrarConsulta(Consulta *consultas, int *numConsultas, const char *cpfPaciente, const char *crmMedico) {
+    if (*numConsultas >= MAX_CONSULTAS) {
+        printf("Máximo de consultas atingido!\n");
+        return;
     }
-    printf("Paciente %s não encontrado.\n", nome);
+    
+    printf("Data da consulta (dd/mm/yyyy): ");
+    scanf(" %10[^\n]", consultas[*numConsultas].data);
+    strcpy(consultas[*numConsultas].cpfPaciente, cpfPaciente);
+    strcpy(consultas[*numConsultas].crmMedico, crmMedico);
+    printf("Digite o diagnóstico: ");
+    scanf(" %[^\n]", consultas[*numConsultas].diagnostico);
+    
+    (*numConsultas)++;
 }
 
-void listarPacientes(Paciente *pacientes, int numPacientes) {
-    printf("=== Lista de Pacientes ===\n");
+void listarConsultasPaciente(Consulta *consultas, int numConsultas, const char *cpfPaciente) {
+    printf("Consultas do paciente %s:\n", cpfPaciente);
+    for (int i = 0; i < numConsultas; i++) {
+        if (strcmp(consultas[i].cpfPaciente, cpfPaciente) == 0) {
+            printf("Data: %s, CRM do Médico: %s, Diagnóstico: %s\n", consultas[i].data, consultas[i].crmMedico, consultas[i].diagnostico);
+        }
+    }
+}
+
+void listarConsultasMedico(Consulta *consultas, int numConsultas, const char *crmMedico) {
+    printf("Consultas do médico %s:\n", crmMedico);
+    for (int i = 0; i < numConsultas; i++) {
+        if (strcmp(consultas[i].crmMedico, crmMedico) == 0) {
+            printf("Data: %s, CPF do Paciente: %s, Diagnóstico: %s\n", consultas[i].data, consultas[i].cpfPaciente, consultas[i].diagnostico);
+        }
+    }
+}
+
+void listarMedicosDisponiveis(Medico *medicos, int numMedicos, const char *especializacao) {
+    printf("Médicos disponíveis:\n");
+    int medicosEncontrados = 0;
+    
+    for (int i = 0; i < numMedicos; i++) {
+        if (medicos[i].disponibilidade == 1 && (especializacao == NULL || strcmp(medicos[i].especializacao, especializacao) == 0)) {
+            printf("Nome: %s, Especialização: %s, CRM: %s\n", medicos[i].nome, medicos[i].especializacao, medicos[i].crm);
+            medicosEncontrados++;
+        }
+    }
+    
+    if (medicosEncontrados == 0) {
+        printf("Nenhum médico disponível encontrado com esses critérios.\n");
+    }
+}
+
+void buscarPacientes(Paciente *pacientes, int numPacientes, const char *nomeFiltro, const char *cpfFiltro) {
+    printf("Pacientes encontrados:\n");
+    int pacientesEncontrados = 0;
+    
     for (int i = 0; i < numPacientes; i++) {
-        printf("%d. %s, Idade: %d\n", i + 1, pacientes[i].nome, pacientes[i].idade);
+        if ((nomeFiltro == NULL || strstr(pacientes[i].nome, nomeFiltro) != NULL) &&
+            (cpfFiltro == NULL || strcmp(pacientes[i].cpf, cpfFiltro) == 0)) {
+            printf("Nome: %s, Data de Nascimento: %s, CPF: %s, Sintomas: %s\n",
+                   pacientes[i].nome, pacientes[i].dataNascimento, pacientes[i].cpf, pacientes[i].sintomas);
+            pacientesEncontrados++;
+        }
+    }
+    
+    if (pacientesEncontrados == 0) {
+        printf("Nenhum paciente encontrado com esses critérios.\n");
     }
 }
 
@@ -162,21 +167,21 @@ void exibirMenu() {
     printf("=== Sistema de Triagem ===\n");
     printf("1. Cadastrar paciente\n");
     printf("2. Cadastrar médico\n");
-    printf("3. Adicionar consulta ao paciente\n");
-    printf("4. Buscar paciente\n");
-    printf("5. Listar pacientes\n");
-    printf("6. Sair\n");
+    printf("3. Registrar consulta\n");
+    printf("4. Listar consultas de um paciente\n");
+    printf("5. Listar consultas de um médico\n");
+    printf("6. Listar médicos disponíveis (com filtro)\n");
+    printf("7. Buscar pacientes (com filtro)\n");
+    printf("8. Sair\n");
     printf("Escolha uma opção: ");
 }
 
 int main() {
     Paciente pacientes[100];
     Medico medicos[50];
-    int numPacientes = 0, numMedicos = 0;
+    Consulta consultas[100];
+    int numPacientes = 0, numMedicos = 0, numConsultas = 0;
     int opcao;
-
-    carregarPacientes(pacientes, &numPacientes);
-    carregarMedicos(medicos, &numMedicos);
 
     while (1) {
         exibirMenu();
@@ -191,42 +196,50 @@ int main() {
                 salvarMedicos(medicos, numMedicos);
                 break;
             case 3: {
-                char nome[50], medico[50], diagnostico[100], data[11];
-                printf("Digite o nome do paciente para adicionar consulta: ");
-                scanf(" %49[^\n]", nome);
-                printf("Digite o nome do médico: ");
-                scanf(" %49[^\n]", medico);
-                printf("Digite o diagnóstico: ");
-                scanf(" %[^\n]", diagnostico);
-                printf("Digite a data (dd/mm/yyyy): ");
-                scanf("%10s", data);
-
-                for (int i = 0; i < numPacientes; i++) {
-                    if (strcmp(pacientes[i].nome, nome) == 0) {
-                        adicionarConsulta(&pacientes[i], medico, diagnostico, data);
-                        salvarPacientes(pacientes, numPacientes);
-                        break;
-                    }
-                }
+                char cpfPaciente[15], crmMedico[15];
+                printf("Digite o CPF do paciente: ");
+                scanf(" %14[^\n]", cpfPaciente);
+                printf("Digite o CRM do médico: ");
+                scanf(" %14[^\n]", crmMedico);
+                registrarConsulta(consultas, &numConsultas, cpfPaciente, crmMedico);
+                salvarConsultas(consultas, numConsultas);
                 break;
             }
             case 4: {
-                char nome[50];
-                printf("Digite o nome do paciente para busca: ");
-                scanf(" %49[^\n]", nome);
-                buscarPaciente(pacientes, numPacientes, nome);
+                char cpfPaciente[15];
+                printf("Digite o CPF do paciente: ");
+                scanf(" %14[^\n]", cpfPaciente);
+                listarConsultasPaciente(consultas, numConsultas, cpfPaciente);
                 break;
             }
-            case 5:
-                listarPacientes(pacientes, numPacientes);
+            case 5: {
+                char crmMedico[15];
+                printf("Digite o CRM do médico: ");
+                scanf(" %14[^\n]", crmMedico);
+                listarConsultasMedico(consultas, numConsultas, crmMedico);
                 break;
-            case 6:
-                printf("Saindo...\n");
-                return 0;
+            }
+            case 6: {
+                char especializacao[50];
+                printf("Digite a especialização (ou deixe em branco para listar todos): ");
+                scanf(" %49[^\n]", especializacao);
+                listarMedicosDisponiveis(medicos, numMedicos, (strlen(especializacao) > 0 ? especializacao : NULL));
+                break;
+            }
+            case 7: {
+                char nomeFiltro[50], cpfFiltro[15];
+                printf("Digite parte do nome do paciente (ou deixe em branco para ignorar): ");
+                scanf(" %49[^\n]", nomeFiltro);
+                printf("Digite o CPF do paciente (ou deixe em branco para ignorar): ");
+                scanf(" %14[^\n]", cpfFiltro);
+                buscarPacientes(pacientes, numPacientes, (strlen(nomeFiltro) > 0 ? nomeFiltro : NULL), (strlen(cpfFiltro) > 0 ? cpfFiltro : NULL));
+                break;
+            }
+            case 8:
+                exit(0);
             default:
-                printf("Opção inválida! Tente novamente.\n");
+                printf("Opção inválida!\n");
         }
     }
-
     return 0;
 }
