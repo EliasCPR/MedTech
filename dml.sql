@@ -1,17 +1,28 @@
--- Inserindo dados na tabela de pacientes
-INSERT INTO Pacientes (cpf, nome, data_nascimento, sintomas) VALUES
-('12345678901', 'João Silva', TO_DATE('1985-05-10', 'YYYY-MM-DD'), 'Dor de cabeça, febre'),
-('23456789012', 'Maria Oliveira', TO_DATE('1990-07-20', 'YYYY-MM-DD'), 'Tosse seca, dor de garganta'),
-('34567890123', 'Carlos Pereira', TO_DATE('1975-03-15', 'YYYY-MM-DD'), 'Dor abdominal, náusea');
+-- Inserindo médicos
+INSERT INTO Medico (ID_Medico, CRM, Nome, Disponibilidade, Especializacao)
+VALUES 
+(1, 123456, 'Dr. João Silva', '2024-11-27 09:00:00', 'Cardiologia'),
+(2, 789012, 'Dra. Maria Oliveira', '2024-11-27 14:00:00', 'Pediatria');
 
--- Inserindo dados na tabela de médicos
-INSERT INTO Medicos (crm, nome, especializacao, disponibilidade) VALUES
-('123456', 'Dr. Fernando Almeida', 'Pediatria', 'Y'),
-('234567', 'Dra. Ana Costa', 'Clínica Geral', 'Y'),
-('345678', 'Dr. Roberto Santos', 'Cardiologia', 'N');
+-- Inserindo pacientes
+INSERT INTO Paciente (ID_Paciente, Nome, Data_Nascimento, Sintomas)
+VALUES 
+(1, 'Ana Paula', '1990-05-15', 'Febre e tosse'),
+(2, 'Carlos Eduardo', '1985-08-22', 'Dor abdominal');
 
--- Inserindo dados na tabela de consultas
-INSERT INTO Consultas (data, cpf_paciente, crm_medico, diagnostico) VALUES
-(TO_DATE('2024-10-01', 'YYYY-MM-DD'), '12345678901', '123456', 'Migraine'),
-(TO_DATE('2024-10-02', 'YYYY-MM-DD'), '23456789012', '234567', 'Faringite'),
-(TO_DATE('2024-10-03', 'YYYY-MM-DD'), '34567890123', '345678', 'Infarto do miocárdio');
+-- Inserindo histórico
+INSERT INTO Historico (ID_Historico, DataRegistro, Procedimento, Medicamento, ProximoRetorno, ID_Paciente)
+VALUES 
+(1, '2024-11-20 10:00:00', 'Consulta de rotina', 'Paracetamol', '2024-12-20', 1);
+
+-- Inserindo consultas
+INSERT INTO Consulta (ID_Consulta, CPF_Paciente, CRM, Diagnostico, ID_Paciente, ID_Medico)
+VALUES 
+(1, '12345678901', 123456, 'Gripe', 1, 1),
+(2, '98765432100', 789012, 'Gastrite', 2, 2);
+
+-- Inserindo procedimentos
+INSERT INTO Procedimento (ID_Procedimento, Descricao, Nome)
+VALUES 
+(1, 'Aplicação de vacina', 'Vacina contra gripe'),
+(2, 'Exame de sangue', 'Hemograma completo');
